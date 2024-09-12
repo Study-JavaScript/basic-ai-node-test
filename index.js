@@ -1,41 +1,36 @@
-const { OpenAI } = require("openai");
-const dotenv = require("dotenv")
-dotenv.config({
-    path: ".env.local"
-})
+const axios = require('axios').default;
+const dotenv = require('dotenv');
+dotenv.config({ path: ".env.local" });
 
-const baseURL = "https://api.aimlapi.com/v1";
+const baseURL = 'https://api.aimlapi.com';
 const apiKey = process.env.AIML_API_KEY;
-const systemPrompt = "You are a travel agent. Be descriptive and helpful";
-const userPrompt = "Tell me about San Francisco";
 
-const api = new OpenAI({
-  apiKey,
+const api = axios.create({
   baseURL,
+  headers: {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  },
 });
 
 const main = async () => {
-  if(apiKey===null|undefined)throw new Error("Error at set env")
-  const completion = await api.chat.completions.create({
-    model: "mistralai/Mistral-7B-Instruct-v0.2",
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      {
-        role: "user",
-        content: userPrompt,
-      },
-    ],
-    temperature: 0.7,
-    max_tokens: 256,
-  });
+  try {
+    const fileUrl = 'https://utfs.io/f/21e280ae-cffb-44f9-a6df-35b65200132d-2487m.mp3';
+    console.log('Enviando el archivo a AIML para transcripción...');
+    
+    const response = await api.post('/stt', {
+      model: '#g1_whisper-large',
+      url: fileUrl,  // Enviando la URL del archivo directamente
+    });
 
-  const response = completion.choices[0].message.content;
-
-  console.log("User:", userPrompt);
-  console.log("AI:", response);
+    console.log('Transcripción:', response.data.results.channels[0].alternatives[0].transcript);
+  } catch (error) {
+    if (error.response) {
+      console.error('Error en la API:', error.response.data);
+    } else {
+      console.error('Error de conexión:', error.message);
+    }
+  }
 };
 
 main();
